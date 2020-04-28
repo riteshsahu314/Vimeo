@@ -10,25 +10,37 @@ class VideoController extends Controller
 {
     public function store(Request $request)
     {
-        try {
+        // Create the Video
+        $uploadMetadata = $request->header("upload-metadata");
+        $uploadMetadata = explode(',', $uploadMetadata);
+        $metaData = [];
 
-            // Create the Video
-            $video_response =  Vimeo::request(
-                '/me/videos',
-                [
-                    'upload' => [
-                        'approach' => 'tus',
-                        "size" => $request->input('size'),
+        foreach ($uploadMetadata as $meta) {
+            $data = explode(' ', $meta);
+            $metaData[$data[0]] = $data[1];
+        }
 
-                    ],
-                    "name" => substr($request->input('filename'), 0, 127)
+        $fileName = base64_decode($metaData['filename']);
+        $fileId = $metaData['fileId'];
+
+        $video_response =  Vimeo::request(
+            '/me/videos',
+            [
+                'upload' => [
+                    'approach' => 'tus',
+                    "size" => $request->header('upload-length'),
+
                 ],
-                'POST'
-            );
+                "name" => substr($fileName, 0, 127)
+            ],
+            'POST'
+        );
 
+        try {
             $videoData = [
                 'user_id' => auth()->user()->id,
-                "name" => substr($request->input('filename'), 0, 250),
+                'video_id' => $fileId,
+                "name" => substr($fileName, 0, 250),
                 "url" => $video_response["body"]["link"],
             ];
 
@@ -39,7 +51,7 @@ class VideoController extends Controller
             ])->header('Location', $video_response["body"]["upload"]["upload_link"]);
         } catch (\Throwable $th) {
             return response()->json([
-                "data" => "Error while uploading the video.",
+                "data" => "Upload link not found.",
             ], 500);
         }
     }
@@ -55,7 +67,7 @@ class VideoController extends Controller
     {
 
         $video->update([
-            'upload_success' => $request->input('upload_success'),
+            'upload_success' => $request->upload_success,
         ]);
 
         return $video->fresh();

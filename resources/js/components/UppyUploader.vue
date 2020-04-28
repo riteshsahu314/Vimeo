@@ -31,8 +31,7 @@ export default {
     data() {
         return {
             selectedFile: null,
-            isUploadButtonDisabled: true,
-            createdVideoData: null
+            isUploadButtonDisabled: true
         };
     },
     mounted() {
@@ -61,21 +60,19 @@ export default {
                     hideUploadButton: true
                 })
                 .use(Tus, {
+                    endpoint: "/me/videos",
                     resume: true,
                     autoRetry: true,
                     retryDelays: [0, 1000, 3000, 5000],
                     metaFields: null,
                     limit: 1,
-                    headers: {
-                        Accept: "application/vnd.vimeo.*+json;version=3.4"
-                    },
-                    chunkSize: 4194304          // chunk size set to 4 mb
+                    chunkSize: 4194304 // set chunk size to 4 mb
                 });
 
             this.uppy.on("upload-success", (file, response) => {
-                this.selectedFile = null;
                 this.isUploadButtonDisabled = false;
-                this.updateVideoStatusToSuccess();
+                this.updateVideoStatusToSuccess(btoa(this.selectedFile.id));
+                this.selectedFile = null;
             });
 
             this.uppy.on("upload-error", (file, error, response) => {
@@ -89,6 +86,11 @@ export default {
 
             this.uppy.on("file-added", file => {
                 this.selectedFile = file;
+
+                this.uppy.setMeta({
+                    fileId: file.id
+                });
+
                 this.isUploadButtonDisabled = false;
             });
 
@@ -100,33 +102,16 @@ export default {
 
         startUpload() {
             this.isUploadButtonDisabled = true;
-            this.createVideo().then(data => {
-                this.createdVideoData = data.data.data;
-                this.uppy.getPlugin("Tus").setOptions({
-                    uploadUrl: data.headers.location
-                });
-                this.uppy.upload();
-            });
+            this.uppy.upload();
         },
 
-        updateVideoStatusToSuccess() {
-            return axios
-                .patch(`/me/videos/${this.createdVideoData.id}`, {
+        updateVideoStatusToSuccess(id) {
+            axios
+                .patch(`/me/videos/${id}`, {
                     upload_success: true
                 })
                 .then(() => {
                     console.log("Video uploaded succesfully");
-                });
-        },
-
-        createVideo() {
-            return axios
-                .post(`/me/videos/`, {
-                    filename: this.selectedFile.name,
-                    size: this.selectedFile.size
-                })
-                .then(data => {
-                    return data;
                 });
         }
     }
