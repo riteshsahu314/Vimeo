@@ -28,6 +28,13 @@ import "@uppy/dashboard/dist/style.css";
 import Tus from "@uppy/tus";
 
 export default {
+    props: {
+        link: {
+            type: String,
+            required: true
+        }
+    },
+
     data() {
         return {
             selectedFile: null,
@@ -60,7 +67,8 @@ export default {
                     hideUploadButton: true
                 })
                 .use(Tus, {
-                    endpoint: "/me/videos",
+                    uploadUrl: this.link,
+                //  endpoint: "/me/videos",
                     resume: true,
                     autoRetry: true,
                     retryDelays: [0, 1000, 3000, 5000],

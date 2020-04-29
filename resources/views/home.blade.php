@@ -8,7 +8,7 @@
                 <div class="card-header">Vimeo Upload Video</div>
 
                 <div class="card-body">
-                    <uppy-uploader></uppy-uploader>
+                    <uppy-uploader link="https://www.example.com"></uppy-uploader>
                 </div>
             </div>
         </div>
